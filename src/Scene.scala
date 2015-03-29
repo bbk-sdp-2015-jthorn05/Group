@@ -1,3 +1,5 @@
+import akka.actor.{Props, ActorRef, ActorSystem, Actor}
+
 object Scene {
 
   import java.io.{FileReader, LineNumberReader}
@@ -50,7 +52,7 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
   val angle = 90f // viewing angle
   //val angle = 180f // fisheye
 
-  def traceLine(width: Int, height: Int, y: Int) {
+  def traceLine(width: Int, height: Int, y: Int, sender: ActorRef) {
     val frustum = (.5 * angle * math.Pi / 180).toFloat
 
     val cosf = math.cos(frustum)
@@ -85,19 +87,7 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
       if (Vector(colour.r, colour.g, colour.b).norm > 1)
         Trace.lightCount += 1
 
-      Coordinator.set(x, y, colour)
-    }
-  }
-
-  def traceImage(width: Int, height: Int) {
-
-    // TODO:
-    // Create a parallel version of this loop, creating one actor per pixel or per row of
-    // pixels.  Each actor should send the Coordinator messages to set the
-    // color of a pixel.  The actor need not receive any messages.
-
-    for (y <- 0 until height) {
-      traceLine(width, height, y)
+      sender ! SetPixel(x, y, colour)
     }
   }
 
