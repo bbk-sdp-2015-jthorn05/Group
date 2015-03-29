@@ -50,8 +50,7 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
   val angle = 90f // viewing angle
   //val angle = 180f // fisheye
 
-  def traceImage(width: Int, height: Int) {
-
+  def traceLine(width: Int, height: Int, y: Int) {
     val frustum = (.5 * angle * math.Pi / 180).toFloat
 
     val cosf = math.cos(frustum)
@@ -61,39 +60,44 @@ class Scene private(val objects: List[Shape], val lights: List[Light]) {
     // average the results to get smoother images.
     val ss = Trace.AntiAliasingFactor
 
+    for (x <- 0 until width) {
+
+      // This loop body can be sequential.
+      var colour = Colour.black
+
+      for (dx <- 0 until ss) {
+        for (dy <- 0 until ss) {
+
+          // Create a vector to the pixel on the view plane formed when
+          // the eye is at the origin and the normal is the Z-axis.
+          val dir = Vector(
+            (sinf * 2 * ((x + dx.toFloat / ss) / width - .5)).toFloat,
+            (sinf * 2 * (height.toFloat / width) * (.5 - (y + dy.toFloat / ss) / height)).toFloat,
+            cosf.toFloat).normalized
+
+          val c = trace(Ray(eye, dir)) / (ss * ss)
+          colour += c
+        }
+      }
+
+      if (Vector(colour.r, colour.g, colour.b).norm < 1)
+        Trace.darkCount += 1
+      if (Vector(colour.r, colour.g, colour.b).norm > 1)
+        Trace.lightCount += 1
+
+      Coordinator.set(x, y, colour)
+    }
+  }
+
+  def traceImage(width: Int, height: Int) {
+
     // TODO:
     // Create a parallel version of this loop, creating one actor per pixel or per row of
     // pixels.  Each actor should send the Coordinator messages to set the
     // color of a pixel.  The actor need not receive any messages.
 
     for (y <- 0 until height) {
-      for (x <- 0 until width) {
-
-        // This loop body can be sequential.
-        var colour = Colour.black
-
-        for (dx <- 0 until ss) {
-          for (dy <- 0 until ss) {
-
-            // Create a vector to the pixel on the view plane formed when
-            // the eye is at the origin and the normal is the Z-axis.
-            val dir = Vector(
-              (sinf * 2 * ((x + dx.toFloat / ss) / width - .5)).toFloat,
-              (sinf * 2 * (height.toFloat / width) * (.5 - (y + dy.toFloat / ss) / height)).toFloat,
-              cosf.toFloat).normalized
-
-            val c = trace(Ray(eye, dir)) / (ss * ss)
-            colour += c
-          }
-        }
-
-        if (Vector(colour.r, colour.g, colour.b).norm < 1)
-          Trace.darkCount += 1
-        if (Vector(colour.r, colour.g, colour.b).norm > 1)
-          Trace.lightCount += 1
-
-        Coordinator.set(x, y, colour)
-      }
+      traceLine(width, height, y)
     }
   }
 
