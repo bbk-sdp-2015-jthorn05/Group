@@ -1,7 +1,8 @@
-# Group Members
+Group Members
+=============
 
-Michael Freeman
-Joel Armando
-Peter Baier
-Zsolt Balvanyos
-James Thornton
+* Michael Freeman
+* Joel Armando
+* Peter Baier
+* Zsolt Balvanyos
+* James Thornton
